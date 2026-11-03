@@ -39,9 +39,29 @@ function createApp({ store = createStore() } = {}) {
 
   const router = express.Router();
 
+  const MAX_LIMIT = 100;
+
   router.get('/', (req, res) => {
-    res.json(store.list());
+    const items = store.list();
+    if (req.query.limit === undefined) return res.json(items);
+
+    const raw = String(req.query.limit);
+    if (!/^\d+$/.test(raw)) {
+      return res.status(400).json({ error: 'limit must be a positive integer' });
+    }
+    const limit = Number(raw);
+    if (limit < 1) {
+      return res.status(400).json({ error: 'limit must be a positive integer' });
+    }
+    if (limit > MAX_LIMIT) {
+      return res.status(400).json({ error: `limit must not exceed ${MAX_LIMIT}` });
+    }
+    return res.json(items.slice(0, limit));
   });
+
+  //router.get('/', (req, res) => {
+  //  res.json(store.list());
+  //});
 
   router.get('/:id', (req, res) => {
     const item = store.get(req.params.id);

@@ -27,6 +27,33 @@ describe('/api/items', () => {
       expect(res.status).toBe(200);
       expect(res.body.map((i) => i.name)).toEqual(['A', 'B']);
     });
+
+    it('returns at most N items when ?limit=N', async () => {
+      await createItem({ name: 'A' });
+      await createItem({ name: 'B' });
+      await createItem({ name: 'C' });
+      const res = await request(app).get('/api/items?limit=2');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['A', 'B']);
+    });
+
+    it('returns all items when limit exceeds the count', async () => {
+      await createItem({ name: 'A' });
+      const res = await request(app).get('/api/items?limit=100');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+    });
+
+    it('refuses a limit above 100 with 400', async () => {
+      const res = await request(app).get('/api/items?limit=101');
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/100/);
+    });
+
+    it('refuses a non-numeric or zero limit with 400', async () => {
+      expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
+      expect((await request(app).get('/api/items?limit=0')).status).toBe(400);
+    });
   });
 
   describe('POST /api/items', () => {
