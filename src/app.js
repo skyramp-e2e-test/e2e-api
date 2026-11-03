@@ -42,7 +42,16 @@ function createApp({ store = createStore() } = {}) {
   const MAX_LIMIT = 100;
 
   router.get('/', (req, res) => {
-    const items = store.list();
+    let items = store.list();
+
+    if (req.query.offset !== undefined) {
+      const rawOffset = String(req.query.offset);
+      if (!/^\d+$/.test(rawOffset)) {
+        return res.status(400).json({ error: 'offset must be a non-negative integer' });
+      }
+      items = items.slice(Number(rawOffset));
+    }
+
     if (req.query.limit === undefined) return res.json(items);
 
     const raw = String(req.query.limit);
