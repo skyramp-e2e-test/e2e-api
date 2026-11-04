@@ -39,15 +39,15 @@ describe('/api/items', () => {
 
     it('returns all items when limit exceeds the count', async () => {
       await createItem({ name: 'A' });
-      const res = await request(app).get('/api/items?limit=100');
+      const res = await request(app).get('/api/items?limit=80');
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
     });
 
-    it('refuses a limit above 100 with 400', async () => {
-      const res = await request(app).get('/api/items?limit=101');
+    it('refuses a limit above 80 with 400', async () => {
+      const res = await request(app).get('/api/items?limit=81');
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/100/);
+      expect(res.body.error).toMatch(/80/);
     });
 
     it('refuses a non-numeric or zero limit with 400', async () => {

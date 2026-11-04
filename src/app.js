@@ -39,7 +39,7 @@ function createApp({ store = createStore() } = {}) {
 
   const router = express.Router();
 
-  const MAX_LIMIT = 100;
+  const MAX_LIMIT = 80;
 
   router.get('/', (req, res) => {
     let items = store.list();
