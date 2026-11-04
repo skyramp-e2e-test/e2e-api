@@ -25,7 +25,7 @@ function validateItem(body, { partial = false } = {}) {
 function pickFields({ name, description }) {
   const fields = {};
   if (name !== undefined) fields.name = name.trim();
-  if (description !== undefined) fields.description = description;
+  if (description !== undefined) fields.description = description.trim();
   return fields;
 }
 
