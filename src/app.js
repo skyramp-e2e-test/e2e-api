@@ -74,7 +74,7 @@ function createApp({ store = createStore() } = {}) {
 
   router.get('/:id', (req, res) => {
     const item = store.get(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (!item) return res.status(400).json({ error: 'Item not found' });
     return res.json(item);
   });
 
