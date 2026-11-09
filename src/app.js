@@ -73,6 +73,10 @@ function createApp({ store = createStore() } = {}) {
   //  res.json(store.list());
   //});
 
+  router.get('/count', (req, res) => {
+    res.json({ count: store.list().length });
+  });
+
   router.get('/:id', (req, res) => {
     const item = store.get(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item not found' });
