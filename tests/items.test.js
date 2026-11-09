@@ -102,6 +102,72 @@ describe('/api/items', () => {
     });
   });
 
+  describe('GET /api/items/count', () => {
+    const getCount = () => request(app).get('/api/items/count');
+
+    it('returns a count of 0 when there are no items', async () => {
+      const res = await getCount();
+      expect(res.status).toBe(200);
+      expect(res.body).not.toEqual({ error: 'Item not found' });
+      expect(res.body).toEqual({ count: 0 });
+    });
+
+    it('is answered by the count route with or without a trailing slash', async () => {
+      const res = await request(app).get('/api/items/count/');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ count: 0 });
+    });
+
+    it('returns the number of stored items and only the count key', async () => {
+      expect((await createItem({ name: 'A' })).status).toBe(201);
+      const afterOne = await getCount();
+      expect(afterOne.status).toBe(200);
+      expect(afterOne.body).toEqual({ count: 1 });
+
+      expect((await createItem({ name: 'B' })).status).toBe(201);
+      expect((await createItem({ name: 'C' })).status).toBe(201);
+      const res = await getCount();
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ count: 3 });
+      expect(typeof res.body.count).toBe('number');
+
+      const list = await request(app).get('/api/items');
+      expect(list.body).toHaveLength(res.body.count);
+    });
+
+    it('follows deletes and is unchanged by updates or rejected creates', async () => {
+      const first = await createItem({ name: 'A' });
+      await createItem({ name: 'B' });
+      expect((await getCount()).body).toEqual({ count: 2 });
+
+      expect((await request(app).put(`/api/items/${first.body.id}`).send({ name: 'X' })).status).toBe(
+        200,
+      );
+      expect(
+        (await request(app).patch(`/api/items/${first.body.id}`).send({ description: 'd' })).status,
+      ).toBe(200);
+      expect((await getCount()).body).toEqual({ count: 2 });
+
+      expect((await createItem({ name: '' })).status).toBe(400);
+      expect((await getCount()).body).toEqual({ count: 2 });
+
+      expect((await request(app).delete(`/api/items/${first.body.id}`)).status).toBe(204);
+      expect((await getCount()).body).toEqual({ count: 1 });
+
+      expect((await request(app).delete('/api/items/missing')).status).toBe(404);
+      expect((await getCount()).body).toEqual({ count: 1 });
+    });
+
+    it('returns the total count regardless of limit and offset params', async () => {
+      await createItem({ name: 'A' });
+      await createItem({ name: 'B' });
+      await createItem({ name: 'C' });
+      const res = await request(app).get('/api/items/count?limit=1&offset=2');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ count: 3 });
+    });
+  });
+
   describe('GET /api/items/:id', () => {
     it('returns an item by id', async () => {
       const created = await createItem();
