@@ -35,7 +35,7 @@ function createApp({ store = createStore() } = {}) {
   app.use(express.json());
 
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', uptime: roundTo(process.uptime(), 2) });
+    res.json({ status: 'ok', uptime: roundTo(process.uptime(), 2), version: '1.0.0' });
   });
 
   const router = express.Router();
