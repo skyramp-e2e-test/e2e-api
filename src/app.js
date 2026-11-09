@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { createStore } = require('./store');
+const { roundTo } = require('./roundTo');
 
 function validateItem(body, { partial = false } = {}) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -34,7 +35,7 @@ function createApp({ store = createStore() } = {}) {
   app.use(express.json());
 
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
+    res.json({ status: 'ok', uptime: roundTo(process.uptime(), 2) });
   });
 
   const router = express.Router();
