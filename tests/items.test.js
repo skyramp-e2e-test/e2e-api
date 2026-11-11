@@ -122,6 +122,51 @@ describe('/api/items', () => {
       expect(res.body).toEqual({ error: "sort must be 'name'" });
     });
 
+    it('does not reorder the stored list after a sorted read', async () => {
+      await createItem({ name: 'cherry' });
+      await createItem({ name: 'Apple' });
+      const sorted = await request(app).get('/api/items?sort=name');
+      expect(sorted.body.map((i) => i.name)).toEqual(['Apple', 'cherry']);
+      const res = await request(app).get('/api/items');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['cherry', 'Apple']);
+    });
+
+    it('sorts before applying offset', async () => {
+      await createItem({ name: 'cherry' });
+      await createItem({ name: 'banana' });
+      await createItem({ name: 'apple' });
+      const tail = await request(app).get('/api/items?sort=name&offset=2');
+      expect(tail.status).toBe(200);
+      expect(tail.body.map((i) => i.name)).toEqual(['cherry']);
+      const page = await request(app).get('/api/items?sort=name&offset=1&limit=1');
+      expect(page.status).toBe(200);
+      expect(page.body.map((i) => i.name)).toEqual(['banana']);
+    });
+
+    it('sorts only the items the q filter keeps', async () => {
+      await createItem({ name: 'cherry' });
+      await createItem({ name: 'mango' });
+      await createItem({ name: 'Banana' });
+      await createItem({ name: 'apple' });
+      const res = await request(app).get('/api/items?q=an&sort=name');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['Banana', 'mango']);
+    });
+
+    it.each(['?sort=', '?sort=Name', '?sort=NAME', '?sort=name&sort=name'])(
+      'refuses sort value %s with 400 and changes nothing',
+      async (qs) => {
+        await createItem({ name: 'Widget' });
+        const res = await request(app).get(`/api/items${qs}`);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: "sort must be 'name'" });
+        const list = await request(app).get('/api/items');
+        expect(list.status).toBe(200);
+        expect(list.body.map((i) => i.name)).toEqual(['Widget']);
+      },
+    );
+
     it('refuses a non-numeric or zero limit with 400', async () => {
       expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
       expect((await request(app).get('/api/items?limit=0')).status).toBe(400);
