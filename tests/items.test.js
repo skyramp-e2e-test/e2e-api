@@ -91,6 +91,95 @@ describe('/api/items', () => {
       expect(res.body).toEqual({ error: 'q must be a single string' });
     });
 
+    // Pasted text AC1
+    it('matches ?q case-insensitively whatever the case of q', async () => {
+      await createItem({ name: 'banana' });
+      await createItem({ name: 'Apple' });
+      await createItem({ name: 'MANGO' });
+      await createItem({ name: 'Grape' });
+      for (const q of ['An', 'AN', 'an']) {
+        const res = await request(app).get(`/api/items?q=${q}`);
+        expect(res.status).toBe(200);
+        expect(res.body.map((i) => i.name)).toEqual(['banana', 'MANGO']);
+      }
+    });
+
+    // Pasted text AC1
+    it('matches ?q against the name only, not the description', async () => {
+      await createItem({ name: 'Widget', description: 'zebra stripes' });
+      await createItem({ name: 'Zebra' });
+      const res = await request(app).get('/api/items?q=zebra');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['Zebra']);
+    });
+
+    // Pasted text AC1
+    it('matches ?q against the current name after a rename', async () => {
+      const created = await createItem({ name: 'Apple' });
+      const patched = await request(app)
+        .patch(`/api/items/${created.body.id}`)
+        .send({ name: 'Cherry' });
+      expect(patched.status).toBe(200);
+
+      const byNew = await request(app).get('/api/items?q=cherry');
+      expect(byNew.status).toBe(200);
+      expect(byNew.body.map((i) => i.id)).toEqual([created.body.id]);
+      expect(byNew.body[0].name).toBe('Cherry');
+
+      const byOld = await request(app).get('/api/items?q=apple');
+      expect(byOld.status).toBe(200);
+      expect(byOld.body).toEqual([]);
+    });
+
+    describe('with ?q and paging', () => {
+      beforeEach(async () => {
+        for (const name of ['Apple', 'banana', 'mango', 'cherry', 'orange']) {
+          await createItem({ name });
+        }
+      });
+
+      // Pasted text AC3
+      it('applies offset to the matching items only', async () => {
+        const res = await request(app).get('/api/items?q=an&offset=1');
+        expect(res.status).toBe(200);
+        expect(res.body.map((i) => i.name)).toEqual(['mango', 'orange']);
+      });
+
+      // Pasted text AC3
+      it('pages through the matching items with offset and limit', async () => {
+        const res = await request(app).get('/api/items?q=an&offset=1&limit=1');
+        expect(res.status).toBe(200);
+        expect(res.body.map((i) => i.name)).toEqual(['mango']);
+      });
+
+      // Pasted text AC3
+      it('returns an empty list for an offset past the matching items', async () => {
+        const res = await request(app).get('/api/items?q=an&offset=3');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual([]);
+      });
+    });
+
+    // Pasted text AC4
+    it('refuses a repeated q with one empty copy alongside a valid limit', async () => {
+      await createItem({ name: 'Apple' });
+      const res = await request(app).get('/api/items?q=a&q=&limit=5');
+      expect(res.status).toBe(400);
+      expect(Array.isArray(res.body)).toBe(false);
+      expect(res.body.error).toEqual(expect.any(String));
+      expect(res.body.error).not.toBe('');
+    });
+
+    // Pasted text AC4
+    it('refuses an identical repeated q alongside a valid offset', async () => {
+      await createItem({ name: 'Apple' });
+      const res = await request(app).get('/api/items?q=a&q=a&offset=0');
+      expect(res.status).toBe(400);
+      expect(Array.isArray(res.body)).toBe(false);
+      expect(res.body.error).toEqual(expect.any(String));
+      expect(res.body.error).not.toBe('');
+    });
+
     it('refuses a non-numeric or zero limit with 400', async () => {
       expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
       expect((await request(app).get('/api/items?limit=0')).status).toBe(400);
