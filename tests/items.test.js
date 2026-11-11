@@ -91,6 +91,37 @@ describe('/api/items', () => {
       expect(res.body).toEqual({ error: 'q must be a single string' });
     });
 
+    it('sorts by name A→Z, ignoring case, with ?sort=name', async () => {
+      await createItem({ name: 'cherry' });
+      await createItem({ name: 'Apple' });
+      await createItem({ name: 'banana' });
+      const res = await request(app).get('/api/items?sort=name');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['Apple', 'banana', 'cherry']);
+    });
+
+    it('keeps insertion order without ?sort', async () => {
+      await createItem({ name: 'cherry' });
+      await createItem({ name: 'Apple' });
+      const res = await request(app).get('/api/items');
+      expect(res.body.map((i) => i.name)).toEqual(['cherry', 'Apple']);
+    });
+
+    it('sorts before applying limit', async () => {
+      await createItem({ name: 'cherry' });
+      await createItem({ name: 'banana' });
+      await createItem({ name: 'apple' });
+      const res = await request(app).get('/api/items?sort=name&limit=2');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['apple', 'banana']);
+    });
+
+    it('refuses an unknown sort value with 400', async () => {
+      const res = await request(app).get('/api/items?sort=createdAt');
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "sort must be 'name'" });
+    });
+
     it('refuses a non-numeric or zero limit with 400', async () => {
       expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
       expect((await request(app).get('/api/items?limit=0')).status).toBe(400);

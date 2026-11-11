@@ -53,6 +53,15 @@ function createApp({ store = createStore() } = {}) {
       items = items.filter((item) => item.name.toLowerCase().includes(needle));
     }
 
+    if (req.query.sort !== undefined) {
+      if (req.query.sort !== 'name') {
+        return res.status(400).json({ error: "sort must be 'name'" });
+      }
+      items = [...items].sort((a, b) =>
+        a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }),
+      );
+    }
+
     if (req.query.offset !== undefined) {
       const rawOffset = String(req.query.offset);
       if (!/^\d+$/.test(rawOffset)) {
