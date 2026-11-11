@@ -59,6 +59,38 @@ describe('/api/items', () => {
       expect(res.body).toHaveLength(105);
     });
 
+    it('filters by name with ?q=text, case-insensitively', async () => {
+      await createItem({ name: 'banana' });
+      await createItem({ name: 'Apple' });
+      await createItem({ name: 'MANGO' });
+      const res = await request(app).get('/api/items?q=An');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['banana', 'MANGO']);
+    });
+
+    it('returns an empty list when nothing matches ?q', async () => {
+      await createItem({ name: 'Apple' });
+      const res = await request(app).get('/api/items?q=zzz');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it('applies limit after the ?q filter', async () => {
+      await createItem({ name: 'Apple' });
+      await createItem({ name: 'banana' });
+      await createItem({ name: 'mango' });
+      await createItem({ name: 'cherry' });
+      const res = await request(app).get('/api/items?q=an&limit=1');
+      expect(res.status).toBe(200);
+      expect(res.body.map((i) => i.name)).toEqual(['banana']);
+    });
+
+    it('refuses a repeated q parameter with 400', async () => {
+      const res = await request(app).get('/api/items?q=a&q=b');
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: 'q must be a single string' });
+    });
+
     it('refuses a non-numeric or zero limit with 400', async () => {
       expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
       expect((await request(app).get('/api/items?limit=0')).status).toBe(400);

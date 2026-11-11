@@ -45,6 +45,14 @@ function createApp({ store = createStore() } = {}) {
   router.get('/', (req, res) => {
     let items = store.list();
 
+    if (req.query.q !== undefined) {
+      if (typeof req.query.q !== 'string') {
+        return res.status(400).json({ error: 'q must be a single string' });
+      }
+      const needle = req.query.q.toLowerCase();
+      items = items.filter((item) => item.name.toLowerCase().includes(needle));
+    }
+
     if (req.query.offset !== undefined) {
       const rawOffset = String(req.query.offset);
       if (!/^\d+$/.test(rawOffset)) {
