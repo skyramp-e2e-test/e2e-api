@@ -50,6 +50,15 @@ describe('/api/items', () => {
       expect(res.body.error).toMatch(/100/);
     });
 
+    it('returns every item when no limit is given, even more than 100', async () => {
+      for (let i = 0; i < 105; i += 1) {
+        await createItem({ name: `Item ${i}` });
+      }
+      const res = await request(app).get('/api/items');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(105);
+    });
+
     it('refuses a non-numeric or zero limit with 400', async () => {
       expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
       expect((await request(app).get('/api/items?limit=0')).status).toBe(400);
