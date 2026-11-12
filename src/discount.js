@@ -1,5 +1,7 @@
 'use strict';
 
+const { roundTo } = require('./roundTo');
+
 function applyDiscount(price, percent) {
   if (typeof price !== 'number' || Number.isNaN(price) || price < 0) {
     throw new TypeError('price must be a non-negative number');
@@ -7,7 +9,7 @@ function applyDiscount(price, percent) {
   if (typeof percent !== 'number' || Number.isNaN(percent) || percent < 0 || percent > 100) {
     throw new RangeError('percent must be a number between 0 and 100');
   }
-  return price - (price * percent) / 100;
+  return roundTo(price - (price * percent) / 100, 2);
 }
 
 module.exports = { applyDiscount };
