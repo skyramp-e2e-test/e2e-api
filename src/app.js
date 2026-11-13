@@ -28,7 +28,6 @@ function pickFields({ name, description }) {
   if (name !== undefined) fields.name = name.trim();
   if (description !== undefined) fields.description = description;
   return fields;
-}
 
 function createApp({ store = createStore() } = {}) {
   const app = express();
