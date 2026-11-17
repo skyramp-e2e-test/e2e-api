@@ -54,6 +54,41 @@ describe('/api/items', () => {
       expect((await request(app).get('/api/items?limit=abc')).status).toBe(400);
       expect((await request(app).get('/api/items?limit=0')).status).toBe(400);
     });
+
+    it('returns the first 80 items in order when ?limit=80 and more are stored', async () => {
+      for (let i = 0; i < 85; i += 1) {
+        await createItem({ name: `I${i}` });
+      }
+      const res = await request(app).get('/api/items?limit=80');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(80);
+      expect(res.body.map((i) => i.name)).toEqual(
+        Array.from({ length: 80 }, (_, i) => `I${i}`),
+      );
+    });
+
+    it('applies limit=80 after the offset', async () => {
+      for (let i = 0; i < 85; i += 1) {
+        await createItem({ name: `I${i}` });
+      }
+      const res = await request(app).get('/api/items?offset=10&limit=80');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(75);
+      expect(res.body[0].name).toBe('I10');
+      expect(res.body[74].name).toBe('I84');
+    });
+
+    it('refuses limits of 99 and 100, allowed before, with the new maximum', async () => {
+      await createItem({ name: 'A' });
+      for (const limit of [100, 99]) {
+        const res = await request(app).get(`/api/items?limit=${limit}`);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'limit must not exceed 80' });
+      }
+      const list = await request(app).get('/api/items');
+      expect(list.status).toBe(200);
+      expect(list.body.map((i) => i.name)).toEqual(['A']);
+    });
   });
 
   describe('POST /api/items', () => {
