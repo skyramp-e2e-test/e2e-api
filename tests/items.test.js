@@ -187,6 +187,16 @@ describe('/api/items', () => {
       expect(res.status).toBe(404);
       expect(res.body).toEqual({ error: 'Item not found' });
     });
+
+    it('returns 404 for a well-formed UUID no item has, while other items stay readable', async () => {
+      const created = await createItem({ name: 'Widget' });
+      const res = await request(app).get('/api/items/00000000-0000-4000-8000-000000000000');
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: 'Item not found' });
+      const existing = await request(app).get(`/api/items/${created.body.id}`);
+      expect(existing.status).toBe(200);
+      expect(existing.body).toEqual(created.body);
+    });
   });
 
   describe('PUT /api/items/:id', () => {
@@ -252,6 +262,19 @@ describe('/api/items', () => {
       expect(del.status).toBe(204);
       const get = await request(app).get(`/api/items/${created.body.id}`);
       expect(get.status).toBe(404);
+    });
+
+    it('answers a deleted item as not found and drops it from the list and count', async () => {
+      const created = await createItem();
+      const del = await request(app).delete(`/api/items/${created.body.id}`);
+      expect(del.status).toBe(204);
+      const get = await request(app).get(`/api/items/${created.body.id}`);
+      expect(get.status).toBe(404);
+      expect(get.body).toEqual({ error: 'Item not found' });
+      const list = await request(app).get('/api/items');
+      expect(list.body).toEqual([]);
+      const count = await request(app).get('/api/items/count');
+      expect(count.body).toEqual({ count: 0 });
     });
 
     it('returns 404 for a missing item', async () => {
