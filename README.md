@@ -80,3 +80,5 @@ Husky runs `lint-staged` before each commit (`.husky/pre-commit`), which lints t
 ## CI
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run lint` and `npm test` on every pull request, regardless of target branch.
+
+Run the tests with `npm test`.
